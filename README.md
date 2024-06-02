@@ -257,3 +257,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Built with Vue 3 and Nuxt.js
 - Powered by FastAPI
 - Database: PostgreSQL# Security update 0
+# Security update 1
