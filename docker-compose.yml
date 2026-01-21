@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: b2b_erp_postgres
+    environment:
+      POSTGRES_DB: b2b_erp
+      POSTGRES_USER: erp_user
+      POSTGRES_PASSWORD: erp_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - erp_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: b2b_erp_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - erp_network
+
+  backend:
+    build:
+      context: ./fastapi-app
+      dockerfile: Dockerfile
+    container_name: b2b_erp_backend
+    environment:
+      DATABASE_URL: postgresql://erp_user:erp_password@postgres:5432/b2b_erp
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./fastapi-app:/app
+    networks:
+      - erp_network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./nuxt-app
+      dockerfile: Dockerfile
+    container_name: b2b_erp_frontend
+    environment:
+      NUXT_PUBLIC_API_BASE: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./nuxt-app:/app
+      - /app/node_modules
+    networks:
+      - erp_network
+
+volumes:
+  postgres_data:
+
+networks:
+  erp_network:
+    driver: bridge
